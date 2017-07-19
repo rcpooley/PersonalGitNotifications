@@ -43,17 +43,11 @@ app.get('/slackauth', function (req, res) {
 });
 
 app.get('/test', function (req, res) {
-    /*slack.api.im.list(access.access_token).then(function (resp) {
-        console.log('im.list:',resp);
+    db.getUserData('testuser').then(function (data) {
+        res.send('Data:' + JSON.stringify(data));
     }, function (err) {
-        throw err;
-    });*/
-
-    slack.api.chat.postMessage('U61C8VBHP', 'Yay!').then(function (resp) {
-        console.log('chat.postMessage',resp);
+        res.send('Error:' + JSON.stringify(err));
     });
-
-    res.send('Yep');
 });
 
 app.get('*', function (req, res) {

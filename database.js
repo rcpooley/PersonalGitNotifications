@@ -40,15 +40,31 @@ function Database(conninfo) {
         return false;
     };
 
-    _this.example = function (name, age) {
+    _this.getUserData = function (uid) {
         return new Promise(function (resolve, reject) {
-            _this.conn.query('SELECT * FROM users WHERE name=? AND age=?', [name, age], function (error, results, fields) {
+            _this.conn.query('SELECT * FROM users WHERE id=?', uid, function (error, results, fields) {
                 if (_this.checkErrorCallback(error,  reject)) return;
                 if (results.length == 0) {
                     reject({error: 'User not found'});
                 } else {
-                    resolve({user: results[0]});
+                    resolve({user: JSON.parse(results[0].data)});
                 }
+            });
+        });
+    };
+
+    _this.setUserData = function (uid, data) {
+        return new Promise(function (resolve, reject) {
+            _this.getUserData(uid).then(function () {
+                _this.conn.query('UPDATE users SET data=? WHERE id=?', [JSON.stringify(data), uid], function (error, results, fields) {
+                    if (_this.checkErrorCallback(error,  reject)) return;
+                    resolve({success: true});
+                });
+            }, function () {
+                _this.conn.query('INSERT INTO users(id, data) VALUES(?, ?)', [uid, JSON.stringify(data)], function (error, results, fields) {
+                    if (_this.checkErrorCallback(error,  reject)) return;
+                    resolve({success: true});
+                });
             });
         });
     };

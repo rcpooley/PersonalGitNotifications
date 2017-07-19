@@ -30,8 +30,6 @@ var api = {
     }
 };
 
-var subscribed = {};
-
 module.exports = {
     init: function (request) {
         api.req = request;
