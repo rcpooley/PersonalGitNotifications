@@ -10,7 +10,7 @@
     "host": "localhost",
     "user": "root",
     "password": "",
-    "database": "test-db",
+    "database": "personalgitnotifications",
     "reconnectdelay": 3000
   }
 }
