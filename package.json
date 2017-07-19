@@ -1,0 +1,10 @@
+{
+  "name": "application-name",
+  "version": "0.0.1",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "express": "latest",
+    "mysql": "^2.13.0",
+    "request": "^2.81.0"
+  }
+}
