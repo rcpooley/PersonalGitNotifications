@@ -5,10 +5,10 @@ var fs = require('fs');
 var request = require('request');
 var config = require('./config.json');
 var util = require('./util').util;
-var slack = require('./slack');
-slack.init(request);
 var database = require('./database');
 var db = new database.Database(config.mysql);
+var slack = require('./slack');
+slack.init(request, db);
 
 //Setup middleware
 app.use(bodyParser.urlencoded({extended: true}));
@@ -48,6 +48,12 @@ app.get('/test', function (req, res) {
     }, function (err) {
         res.send('Error:' + JSON.stringify(err));
     });
+});
+
+app.get('/msg', function (req, res) {
+    if (!req.query.msg) return;
+    slack.onMessage('U61C8VBHP', req.query.msg);
+    res.send('Sent successfully!');
 });
 
 app.get('*', function (req, res) {

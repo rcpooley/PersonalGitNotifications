@@ -47,7 +47,7 @@ function Database(conninfo) {
                 if (results.length == 0) {
                     reject({error: 'User not found'});
                 } else {
-                    resolve({user: JSON.parse(results[0].data)});
+                    resolve(JSON.parse(results[0].data));
                 }
             });
         });
