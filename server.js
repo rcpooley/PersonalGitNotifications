@@ -73,10 +73,10 @@ app.get('*', function (req, res) {
         path = __dirname + '/public/err404.html';
     }
 
-    if (url == '/success.html') {
+    /*if (url == '/success.html') {
         res.send(JSON.stringify(access));
         return;
-    }
+    }*/
 
     res.sendFile(path);
 });
