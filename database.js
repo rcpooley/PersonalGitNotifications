@@ -54,17 +54,43 @@ function Database(conninfo) {
     };
 
     _this.setUserData = function (uid, data) {
+        var gitusername = '';
+        if (data.gitusername) {
+            gitusername = data.gitusername;
+        }
         return new Promise(function (resolve, reject) {
             _this.getUserData(uid).then(function () {
-                _this.conn.query('UPDATE users SET data=? WHERE id=?', [JSON.stringify(data), uid], function (error, results, fields) {
+                _this.conn.query('UPDATE users SET data=?, gitusername=? WHERE id=?', [JSON.stringify(data), gitusername, uid], function (error, results, fields) {
                     if (_this.checkErrorCallback(error,  reject)) return;
                     resolve({success: true});
                 });
             }, function () {
-                _this.conn.query('INSERT INTO users(id, data) VALUES(?, ?)', [uid, JSON.stringify(data)], function (error, results, fields) {
+                _this.conn.query('INSERT INTO users(id, gitusername, data) VALUES(?, ?, ?)', [uid, gitusername, JSON.stringify(data)], function (error, results, fields) {
                     if (_this.checkErrorCallback(error,  reject)) return;
                     resolve({success: true});
                 });
+            });
+        });
+    };
+
+    _this.getUserDataByGitUsername = function (gitusername) {
+        return new Promise(function (resolve, reject) {
+            _this.conn.query('SELECT * FROM users WHERE gitusername=?', gitusername, function (error, results, fields) {
+                if (_this.checkErrorCallback(error,  reject)) return;
+                if (results.length == 0) {
+                    reject({error: 'User not found'});
+                } else {
+                    resolve(JSON.parse(results[0].data));
+                }
+            });
+        });
+    };
+
+    _this.getUsers = function () {
+        return new Promise(function (resolve, reject) {
+            _this.conn.query('SELECT * FROM users', function (error, results, fields) {
+                if (_this.checkErrorCallback(error,  reject)) return;
+                resolve(results);
             });
         });
     };

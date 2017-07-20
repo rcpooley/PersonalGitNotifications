@@ -106,18 +106,38 @@ app.post('/githook', function (req, res) {
     //PullRequestEvent
     if (data.number) {
         console.log('PullRequestEvent');
+        slack.handlePullRequest(data.pull_request);
+
+        var pr = data.pull_request;
+        var action = pr.action;
+
+        if (action == 'opened' || action == 'reopened' || action == 'edited' || action == 'synchronized') {
+            slack.broadcastPRUpdate(pr.number, pr.title);
+        }
     }
     //PullRequestReviewEvent
     else if (data.review) {
         console.log('PullRequestReviewEvent');
+        slack.handlePullRequest(data.pull_request);
+
+        var pr = data.pull_request;
+        slack.broadcastPRUpdate(pr.number, pr.title);
     }
     //IssueCommentEvent
     else if (data.issue) {
         console.log('IssueCommentEvent');
+        slack.handleGitUser(data.issue.user, data.issue.number, data.issue.title);
+
+        slack.broadcastPRUpdate(data.issue.number, data.issue.title);
     }
     //PullRequestReviewCommentEvent
     else if (data.comment) {
         console.log('PullRequestReviewCommentEvent');
+        slack.handlePullRequest(data.pull_request);
+        slack.handleGitUser(data.comment.user, data.pull_request.number, data.pull_request.title);
+
+        var pr = data.pull_request;
+        slack.broadcastPRUpdate(pr.number, pr.title);
     }
 
     res.send(JSON.stringify({msg: 'Success!'}));

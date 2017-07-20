@@ -11,6 +11,12 @@ var db = {
     },
     setUserData: function (uid, data) {
         return db.db.setUserData(uid, data);
+    },
+    getUserDataByGitUsername: function (gitusername) {
+        return db.db.getUserDataByGitUsername(gitusername);
+    },
+    getUsers: function () {
+        return db.db.getUsers();
     }
 };
 
@@ -59,13 +65,25 @@ module.exports = {
             api.chat.postMessage(from, txt);
         };
 
-        console.log('got',msg,'from',from);
+        console.log('got "' + msg + '" from ' + from);
 
         var args = msg.split(' ');
         msg = args.splice(0, 1)[0].toLowerCase();
 
         if (msg == 'help') {
-            respond('Commands: pr');
+            respond('Commands: setgituser, pr');
+        } else if (msg == 'setgituser') {
+            if (args.length == 0) {
+                respond('Usage: setgituser [your git username]');
+            } else {
+                db.getUserData(from).then(function (data) {
+                    data.gitusername = args[0];
+                    data.slackid = from;
+                    db.setUserData(from, data).then(function () {
+                        respond('Your git username has been updated to "' + data.gitusername + '"');
+                    });
+                });
+            }
         } else if (msg == 'pr') {
             if (args.length == 0) {
                 respond('Usage:\n' +
@@ -74,6 +92,7 @@ module.exports = {
                     'pr rm [pull req number]');
             } else {
                 db.getUserData(from).then(function (data) {
+                    data.slackid = from;
                     var prs = data.prs;
                     if (args[0] == 'status') {
                         console.log(data);
@@ -111,6 +130,34 @@ module.exports = {
                 });
             }
         }
+    },
+    handlePullRequest: function (pr) {
+        var prnum = pr.number;
+        var users = pr.assignees.concat(pr.requested_reviewers).concat([pr.user]);
+        for (var i = 0; i < users.length; i++) {
+            module.exports.handleGitUser(users[i], prnum, pr.title);
+        }
+    },
+    handleGitUser: function (user, prnum, prtitle) {
+        var gitusername = user.login;
+        db.getUserDataByGitUsername(gitusername).then(function (data) {
+            if (data.prs.indexOf(prnum) == -1) {
+                data.prs.push(prnum);
+                db.setUserData(data.slackid, data).then(function () {
+                    api.chat.postMessage(data.slackid, 'You have been subscribed to PR #' + prnum + ' "' + prtitle + '"');
+                });
+            }
+        });
+    },
+    broadcastPRUpdate: function (prnum, prtitle) {
+        db.getUsers().then(function (users) {
+            for (var i = 0; i < users.length; i++) {
+                var data = JSON.parse(users[i].data);
+                if (data.prs.indexOf(prnum) >= 0) {
+                    api.chat.postMessage(data.slackid, 'New changes in PR #' + prnum + ' "' + prtitle + '"');
+                }
+            }
+        });
     },
     api: api
 };
