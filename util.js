@@ -9,6 +9,8 @@ util.randomStr = function (len) {
     return str;
 };
 
+util.nofunc = function() {};
+
 module.exports = {
     util: util
 };

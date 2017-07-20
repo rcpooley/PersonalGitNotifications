@@ -14,8 +14,13 @@ slack.init(request, db);
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
-//Store our access information
+//Store our access information and attempt to load from database
 var access;
+db.getVal('access').then(function (data) {
+    access = data;
+    slack.updateAccess(access);
+    console.log('Loaded access from db');
+}, util.nofunc);
 
 //Handle get requests
 app.get('/slackauth', function (req, res) {
@@ -34,6 +39,7 @@ app.get('/slackauth', function (req, res) {
         if (error) throw error;
         access = JSON.parse(body);
         slack.updateAccess(access);
+        db.setVal('access', access);
         if (access.ok) {
             res.redirect('index.html');
         } else {
@@ -43,11 +49,7 @@ app.get('/slackauth', function (req, res) {
 });
 
 app.get('/test', function (req, res) {
-    db.getUserData('testuser').then(function (data) {
-        res.send('Data:' + JSON.stringify(data));
-    }, function (err) {
-        res.send('Error:' + JSON.stringify(err));
-    });
+    db.setVal('test', {a: 1});
 });
 
 app.get('/msg', function (req, res) {

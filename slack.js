@@ -147,7 +147,7 @@ module.exports = {
                     api.chat.postMessage(data.slackid, 'You have been subscribed to PR #' + prnum + ' "' + prtitle + '"');
                 });
             }
-        });
+        }, function () {});
     },
     broadcastPRUpdate: function (prnum, prtitle) {
         db.getUsers().then(function (users) {
@@ -157,7 +157,7 @@ module.exports = {
                     api.chat.postMessage(data.slackid, 'New changes in PR #' + prnum + ' "' + prtitle + '"');
                 }
             }
-        });
+        }, function () {});
     },
     api: api
 };

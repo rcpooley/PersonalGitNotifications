@@ -94,6 +94,35 @@ function Database(conninfo) {
             });
         });
     };
+
+    _this.getVal = function (key) {
+        return new Promise(function (resolve, reject) {
+            _this.conn.query('SELECT * FROM save WHERE keyy=?', key, function (error, results, fields) {
+                if (_this.checkErrorCallback(error,  reject)) return;
+                if (results.length == 0) {
+                    reject({error: 'not found'});
+                } else {
+                    resolve(JSON.parse(results[0].val));
+                }
+            });
+        });
+    };
+
+    _this.setVal = function (key, val) {
+        return new Promise(function (resolve, reject) {
+            _this.getVal(key).then(function () {
+                _this.conn.query('UPDATE save SET val=? WHERE keyy=?', [val, key], function (error, results, fields) {
+                    if (_this.checkErrorCallback(error,  reject)) return;
+                    resolve({success: true});
+                });
+            }, function () {
+                _this.conn.query('INSERT INTO save(keyy, val) VALUES(?, ?)', [key, JSON.stringify(val)], function (error, results, fields) {
+                    if (_this.checkErrorCallback(error,  reject)) return;
+                    resolve({success: true});
+                });
+            });
+        });
+    };
 }
 
 module.exports = {
