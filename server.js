@@ -22,6 +22,17 @@ db.getVal('access').then(function (data) {
     console.log('Loaded access from db');
 }, util.nofunc);
 
+//Store our pr/issue types
+var prTypes = {};
+db.getVal('prtypes').then(function (data) {
+    prTypes = data;
+    console.log('Loaded prtypes from db');
+}, util.nofunc);
+
+function savePRTypes() {
+    return db.setVal('prtypes', prTypes);
+}
+
 //Handle get requests
 app.get('/slackauth', function (req, res) {
     if (!req.query.code || !req.query.state) {
@@ -105,41 +116,38 @@ app.post('/slackevent', function (req, res) {
 app.post('/githook', function (req, res) {
     var data = req.body;
 
-    //PullRequestEvent
-    if (data.number) {
-        console.log('PullRequestEvent');
-        slack.handlePullRequest(data.pull_request);
+    var evt = req.headers['x-github-event'];
+    if (!evt) return;
 
-        var pr = data.pull_request;
-        var action = pr.action;
+    var pr;
 
-        if (action == 'opened' || action == 'reopened' || action == 'edited' || action == 'synchronized') {
-            slack.broadcastPRUpdate(pr.number, pr.title);
+    if (evt == 'pull_request' || evt == 'pull_request_review' || evt == 'pull_request_review_comment') {
+        pr = data.pull_request;
+        var num = pr.number;
+        if (!prTypes[num]) {
+            prTypes[num] = 'pr';
+            savePRTypes();
         }
     }
-    //PullRequestReviewEvent
-    else if (data.review) {
-        console.log('PullRequestReviewEvent');
-        slack.handlePullRequest(data.pull_request);
 
-        var pr = data.pull_request;
-        slack.broadcastPRUpdate(pr.number, pr.title);
+    if (evt == 'issues' || evt == 'issue_comment') {
+        pr = data.issue;
     }
-    //IssueCommentEvent
-    else if (data.issue) {
-        console.log('IssueCommentEvent');
-        slack.handleGitUser(data.issue.user, data.issue.number, data.issue.title);
 
-        slack.broadcastPRUpdate(data.issue.number, data.issue.title);
-    }
-    //PullRequestReviewCommentEvent
-    else if (data.comment) {
-        console.log('PullRequestReviewCommentEvent');
-        slack.handlePullRequest(data.pull_request);
-        slack.handleGitUser(data.comment.user, data.pull_request.number, data.pull_request.title);
+    if (pr) {
+        var num = pr.number;
+        if (!prTypes[num]) {
+            prTypes[num] = 'issue';
+            savePRTypes();
+        }
+        pr.mytype = prTypes[num];
 
-        var pr = data.pull_request;
-        slack.broadcastPRUpdate(pr.number, pr.title);
+        if (data.comment) {
+            slack.handleGitUser(data.comment.user, pr);
+        }
+
+        slack.handlePullRequest(pr);
+        slack.broadcastPRUpdate(pr);
     }
 
     res.send(JSON.stringify({msg: 'Success!'}));

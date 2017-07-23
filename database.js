@@ -111,7 +111,7 @@ function Database(conninfo) {
     _this.setVal = function (key, val) {
         return new Promise(function (resolve, reject) {
             _this.getVal(key).then(function () {
-                _this.conn.query('UPDATE save SET val=? WHERE keyy=?', [val, key], function (error, results, fields) {
+                _this.conn.query('UPDATE save SET val=? WHERE keyy=?', [JSON.stringify(val), key], function (error, results, fields) {
                     if (_this.checkErrorCallback(error,  reject)) return;
                     resolve({success: true});
                 });

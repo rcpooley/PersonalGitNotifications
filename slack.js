@@ -52,6 +52,20 @@ var api = {
     }
 };
 
+var msgTimeouts = {};
+function delayMsg(channel, text) {
+    if (msgTimeouts[channel]) return;
+    msgTimeouts[channel] = setTimeout(function () {
+        delete msgTimeouts[channel];
+        api.chat.postMessage(channel, text);
+    }, 1000);
+}
+
+var msgs = {
+    onSubscribed: 'You have been subscribed to <{link}|{type} #{num} "{title}">',
+    onUpdate: 'There are new changes in <{link}|{type} #{num} "{title}">'
+};
+
 module.exports = {
     init: function (request, database) {
         api.req = request;
@@ -132,29 +146,37 @@ module.exports = {
         }
     },
     handlePullRequest: function (pr) {
-        var prnum = pr.number;
         var users = pr.assignees.concat(pr.requested_reviewers).concat([pr.user]);
         for (var i = 0; i < users.length; i++) {
-            module.exports.handleGitUser(users[i], prnum, pr.title);
+            module.exports.handleGitUser(users[i], pr);
         }
     },
-    handleGitUser: function (user, prnum, prtitle) {
+    handleGitUser: function (user, pr) {
+        if (!user) return;
+        var prnum = pr.number;
+        var prtitle = pr.title;
+        var prurl = pr['html_url'];
+
         var gitusername = user.login;
         db.getUserDataByGitUsername(gitusername).then(function (data) {
             if (data.prs.indexOf(prnum) == -1) {
                 data.prs.push(prnum);
                 db.setUserData(data.slackid, data).then(function () {
-                    api.chat.postMessage(data.slackid, 'You have been subscribed to PR #' + prnum + ' "' + prtitle + '"');
+                    delayMsg(data.slackid, msgs.onSubscribed.replace('{num}', prnum).replace('{title}', prtitle).replace('{type}', pr.mytype == 'pr' ? 'Pull Request' : 'Issue').replace('{link}', prurl));
                 });
             }
         }, function () {});
     },
-    broadcastPRUpdate: function (prnum, prtitle) {
+    broadcastPRUpdate: function (pr) {
+        var prnum = pr.number;
+        var prtitle = pr.title;
+        var prurl = pr['html_url'];
+
         db.getUsers().then(function (users) {
             for (var i = 0; i < users.length; i++) {
                 var data = JSON.parse(users[i].data);
                 if (data.prs.indexOf(prnum) >= 0) {
-                    api.chat.postMessage(data.slackid, 'New changes in PR #' + prnum + ' "' + prtitle + '"');
+                    delayMsg(data.slackid, msgs.onUpdate.replace('{num}', prnum).replace('{title}', prtitle).replace('{type}', pr.mytype == 'pr' ? 'Pull Request' : 'Issue').replace('{link}', prurl));
                 }
             }
         }, function () {});
